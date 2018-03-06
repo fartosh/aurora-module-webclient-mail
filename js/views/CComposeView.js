@@ -41,7 +41,7 @@ var
 	CMessageModel = require('modules/%ModuleName%/js/models/CMessageModel.js'),
 	CAttachmentModel = require('modules/%ModuleName%/js/models/CAttachmentModel.js'),
 	
-	CHtmlEditorView = require('modules/%ModuleName%/js/views/CHtmlEditorView.js'),
+	CHtmlEditorView = ModulesManager.run('HtmlEditorWebclient', 'getHtmlEditorConstructor'),
 	
 	MainTab = App.isNewTab() && window.opener && window.opener.MainTabMailMethods,
 	
@@ -85,7 +85,25 @@ function CComposeView()
 	this.sending = ko.observable(false);
 	this.saving = ko.observable(false);
 
-	this.oHtmlEditor = new CHtmlEditorView(false, this);
+	this.oHtmlEditor = new CHtmlEditorView({
+		InsertImageAsBase64: false,
+		AllowInsertImage: Settings.AllowInsertImage,
+		DefaultFontName: Settings.DefaultFontName,
+		DefaultFontSize: Settings.DefaultFontSize,
+		AllowChangeInputDirection: UserSettings.IsRTL || Settings.AllowChangeInputDirection,
+		IsRTL: UserSettings.IsRTL,
+		ImageUploadSizeLimit: Settings.ImageUploadSizeLimit,
+		HiddenUploadParameters: _.extendOwn({
+			'Module': Settings.ServerModuleName,
+			'Method': 'UploadAttachment',
+			'Parameters':  function () {
+				return JSON.stringify({
+					'AccountID': MailCache.currentAccountId()
+				});
+			}
+		}, App.getCommonRequestParameters()),
+		CAttachmentModel: CAttachmentModel
+	});
 
 	this.visibleBcc = ko.observable(false);
 	this.visibleBcc.subscribe(function () {

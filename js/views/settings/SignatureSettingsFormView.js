@@ -8,17 +8,20 @@ var
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
 	
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
+	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	Browser = require('%PathToCoreWebclientModule%/js/Browser.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+	UserSettings = require('%PathToCoreWebclientModule%/js/Settings.js'),
 	
 	CAbstractSettingsFormView = ModulesManager.run('SettingsWebclient', 'getAbstractSettingsFormViewClass'),
 	
 	AccountList = require('modules/%ModuleName%/js/AccountList.js'),
 	Ajax = require('modules/%ModuleName%/js/Ajax.js'),
+	MailCache = require('modules/%ModuleName%/js/Cache.js'),
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 	
-	CHtmlEditorView = require('modules/%ModuleName%/js/views/CHtmlEditorView.js')
+	CHtmlEditorView = ModulesManager.run('HtmlEditorWebclient', 'getHtmlEditorConstructor')
 ;
 
 /**
@@ -33,7 +36,24 @@ function CSignatureSettingsFormView()
 	this.useSignatureRadio = ko.observable(Enums.UseSignature.Off);
 	this.signature = ko.observable('');
 
-	this.oHtmlEditor = new CHtmlEditorView(true);
+	this.oHtmlEditor = new CHtmlEditorView({
+		InsertImageAsBase64: true,
+		AllowInsertImage: Settings.AllowInsertImage,
+		DefaultFontName: Settings.DefaultFontName,
+		DefaultFontSize: Settings.DefaultFontSize,
+		AllowChangeInputDirection: UserSettings.IsRTL || Settings.AllowChangeInputDirection,
+		IsRTL: UserSettings.IsRTL,
+		ImageUploadSizeLimit: Settings.ImageUploadSizeLimit,
+		HiddenUploadParameters: _.extendOwn({
+			'Module': Settings.ServerModuleName,
+			'Method': 'UploadAttachment',
+			'Parameters':  function () {
+				return JSON.stringify({
+					'AccountID': MailCache.currentAccountId()
+				});
+			}
+		}, App.getCommonRequestParameters())
+	});
 	this.oHtmlEditor.textFocused.subscribe(function () {
 		if (this.oHtmlEditor.textFocused())
 		{
